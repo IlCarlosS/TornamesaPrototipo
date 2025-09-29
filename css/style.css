@@ -1,0 +1,370 @@
+:root{
+    --bg:#1e2a3a;
+    --card:#2d3e50;
+    --accent:#ffc107;
+    --muted:#b0bec5;
+    --glass: rgba(255,255,255,0.03);
+    --surco:#4a4d4e;
+}
+
+html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Arial;background: var(--bg);color:var(--accent);}
+.wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:0;}
+.player{
+    width:90.20rem; 
+    max-width:96vw;
+    display:grid;
+    grid-template-columns: 380px 1fr;
+    gap:9rem;
+    background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);
+    padding:22px;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,0.7);
+    border:1px solid rgba(255,255,255,0.03);
+    padding: 8rem;
+}
+
+  /* Disco */
+.deck{display:flex;flex-direction:column;align-items:center;gap:18px; width:120%;}
+.turntable{
+    width:448px;
+    height:448px;
+    border-radius:50%;
+    background:radial-gradient(circle at 30% 20%, #222, #0b0b0b 50%);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    box-shadow:inset 0 -8px 30px rgba(0,0,0,0.7);
+}
+
+.platter{
+    width:420px;
+    height:420px;
+    border-radius:50%;
+    background:conic-gradient(#111 0 10%, #222 10% 30%, #111 30% 60%, #0f0f0f 60% 100%);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    overflow:hidden;
+    transition:transform .3s ease;
+     box-shadow: 
+        /* Borde exterior del vinilo (sombra oscura para profundidad) */
+        inset 0 0 10px 5px #000000, 
+        /* Borde interior junto a la etiqueta (luz suave) */
+        inset 0 0 5px 3px rgba(255, 255, 255, 0.05),
+        
+        /* Surcos principales y repetitivos */
+        /* Reemplazando colores sólidos por RGBA con baja opacidad */
+        
+        /* Surco (simulación de luz/reflejo) - Usaremos blanco muy transparente */
+        inset 0 0 1px 0px rgba(255, 255, 255, 0.05), 
+        
+        /* Separador Oscuro (simulación de sombra) - Usaremos negro transparente */
+        inset 0 0 1px 20px rgba(0, 0, 0, 0.4), 
+        
+        inset 0 0 1px 21px rgba(255, 255, 255, 0.05),
+        inset 0 0 1px 40px rgba(0, 0, 0, 0.4),
+        
+        inset 0 0 1px 41px rgba(255, 255, 255, 0.05),
+        inset 0 0 1px 60px rgba(0, 0, 0, 0.4),
+        
+        inset 0 0 1px 61px rgba(255, 255, 255, 0.05),
+        inset 0 0 1px 80px rgba(0, 0, 0, 0.4),
+        
+        inset 0 0 1px 81px rgba(255, 255, 255, 0.05),
+        inset 0 0 1px 100px rgba(0, 0, 0, 0.4),
+        
+        inset 0 0 1px 101px rgba(255, 255, 255, 0.05);
+}
+
+.label{
+    width:100px;
+    height:100px;
+    border-radius:50%;
+    background:linear-gradient(180deg,var(--accent),var(--bg));
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+    color:#111;
+}
+
+.label img{
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius:50%;
+}
+
+/* CSS animation for spin */
+@keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg); } }
+.platter.playing{ animation: spin 3s linear infinite; }
+
+/* Aguja (brazo) */
+.arm{
+    position:absolute; 
+    width:220px; 
+    height:6px; 
+    right:-20px; 
+    top:46px; 
+    transform-origin:28px 3px; 
+    transform: rotate(-30deg); 
+    transition: transform .6s cubic-bezier(.2,.9,.2,1);
+}
+
+.arm .stick{
+    width:200px;
+    height:10px;
+    background: var(--muted);
+    border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.6);
+}
+
+.arm .head{
+    position:absolute;
+    left:6px;top:-8px;
+    width:32px;
+    height:24px;
+    background:var(--accent);
+}
+
+.arm.on{ transform: rotate(-6deg); } /* posición sobre el disco */
+
+/* Controls */
+.controls{
+    display:flex;
+    gap:12px;
+    align-items:center;
+}
+
+button{
+    background:var(--glass);
+    border:1px solid rgba(255,255,255,0.03);
+    color:var(--muted);
+    padding:10px 14px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:800;
+    font-size: 1.4rem;
+}
+
+button.active-random {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 10px var(--muted);
+}
+
+button:active{
+    transform:scale(.98);
+    box-shadow: 0 0 10px var(--muted);
+}
+
+.big{padding:12px 18px;
+    font-size:1.65rem;
+    color: var(--accent);
+}
+
+.prog-wrap{margin-top:6px;}
+.progress{
+    height:8px;
+    background:rgba(255,255,255,0.06);
+    border-radius:999px;
+    position:relative;
+    cursor:pointer;
+}
+
+.progress .bar{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,var(--accent),var(--muted));
+    border-radius:999px;
+}
+
+.meta{display:flex;flex-direction:column;gap:6px;}
+
+.playlist{
+    margin-top:14px;
+    background:rgba(255,255,255,0.02);
+    padding:8px;border-radius:8px;
+    max-height:200px;
+    overflow:auto;
+}
+
+.dropzone {
+    height: 2.5rem;
+    margin-top: 12px;
+    padding: 20px;
+    border: 2px dashed var(--muted);
+    border-radius: 10px;
+    text-align: center;
+    font-size: 0.95rem;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.02);
+    transition: border-color 0.3s, background 0.3s, color 0.3s;
+    cursor: pointer;
+}
+
+/* cuando el usuario arrastra archivos encima */
+.dropzone.dragover {
+    border-color: var(--accent);
+    background: rgba(255, 100, 150, 0.1);
+    color: var(--accent);
+}
+
+.track{
+    padding:8px;
+    border-radius:8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    color:var(--muted);
+}
+.track:hover{cursor: pointer;}
+.track.active{background:linear-gradient(90deg, rgba(233,75,121,0.08), rgba(233,75,121,0.02));color:var(--accent);}
+
+.time{font-size:1.4rem;color:var(--muted);}
+
+
+/*Meta*/
+.volumen{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    align-items:flex-end;
+}
+
+.volumen label{
+    font-size:.9rem;
+    color:var(--muted);
+}
+
+.meta-contenedor{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+}
+
+#artist{
+    color:var(--muted);
+    font-size:1.15rem;
+}
+
+#title{
+    margin:0;
+    font-size:1.45rem;
+}
+
+.visualizer {
+  width: 100%;
+  height: 80px;
+  margin-top: 10px;
+  background: var(--bg);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+#waveCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+
+
+  /* Responsive */
+@media (max-width:780px){
+    .player{grid-template-columns:1fr;align-items:center;}
+    .turntable{width:260px;height:260px;}
+    .platter{width:210px;height:210px;}
+    .arm {width: 180px; right: -30px;top: 20px;}
+    .arm .stick {width: 160px;}
+    .time{font-size: 0.8rem;}
+    .button{font-size: 1rem;}
+    .big{font-size: 1.2rem;}
+    .controls{gap: 8px;}
+    .deck{width:100%;}
+    .dropzone {height: 2rem;margin-top: 1rem;width: 90%;}
+}
+
+@media (max-width: 1024px) {
+    .player {gap: 4rem; width: 80rem;}
+    .turntable {width: 380px;height: 380px;}
+    .platter {width: 320px; height: 320px;}
+    .arm {width: 240px;right: -40px;top: 25px;transform: rotate(-40deg); }
+    .arm .stick {width: 220px;}
+    .volumen {align-items: center;}
+}
+
+@media (max-width: 480px) {
+    /* Mantiene la vista de una columna del MQ de 780px */
+    .deck{width: 100%;}
+    .player {
+        grid-template-columns: 1fr;
+        padding: 3.5rem 1rem 1rem 1rem;
+        gap: 0.7rem;
+    }
+    .turntable {
+        width: 220px;
+        height: 220px;
+    }
+    .platter {
+        width: 180px;
+        height: 180px;
+    }
+    .arm {
+        width: 140px;
+        height: 4px; 
+        right: -20px; /* Posicionamiento más cerca del disco */
+        top: 15px;
+        transform-origin: 30px 2px;
+    }
+    .arm .stick {
+        width: 130px;
+        height: 8px;
+    }
+    .arm .head {
+        /*reducir ligeramente la cabeza*/
+        width: 24px;
+        height: 18px;
+        left: 4px;
+        top: -7px;
+    }
+    .meta{
+        align-items: center;
+    }
+    .meta-contenedor {
+        gap: 1rem; 
+    }
+    .meta-contenedor #title {
+        font-size: 1rem;
+    }
+    .meta-contenedor #artist {
+        font-size: 0.8rem;
+    }
+    .visualizer{
+        margin-top: 0;
+        height: 3rem;
+    }
+    .volumen {
+        display: none; 
+    }
+    .time {
+        font-size: 0.75rem;
+    }
+    .controls button {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+    .controls .big {
+        font-size: 1rem;
+    }
+    .playlist{
+        max-height: 180px;
+        width: 320px;
+        margin-bottom: 2rem;
+    }
+    .dropzone {
+        height: 2rem;
+        margin-top: 0rem;
+        width: 85%;
+    }
+}
