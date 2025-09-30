@@ -286,7 +286,7 @@ button:active{
 }
 
 @media (max-width: 1024px) {
-    .player {gap: 4rem; width: 80rem;}
+    .player {gap: 6rem; width: 80rem;}
     .turntable {width: 380px;height: 380px;}
     .platter {width: 320px; height: 320px;}
     .arm {width: 240px;right: -40px;top: 25px;transform: rotate(-40deg); }
