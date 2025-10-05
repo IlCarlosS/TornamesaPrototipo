@@ -36,6 +36,20 @@ function buildPlaylist(){
       const tr = document.createElement('div');
       tr.className = 'track' + (i===idx ? ' active' : '');
       tr.innerHTML = `<div>${i+1}. ${t.title}</div><div style="font-size:.85rem;color:var(--muted)">${t.artist}</div>`;
+
+      //botón de eliminar en canciones de usuario
+    if(i > 2){ 
+      const delBtn = document.createElement("button");
+        delBtn.textContent = "🗑";
+        delBtn.style.marginLeft = "8px";
+        delBtn.style.cursor = "pointer";
+        delBtn.addEventListener("click", (e) => {
+        e.stopPropagation(); // evita que dispare el play()
+          deleteTrack(i);
+        });
+        tr.appendChild(delBtn);
+      }
+
       tr.addEventListener('click', () => {
         loadTrack(i);
         play();
@@ -83,7 +97,7 @@ function play(){
     }
   }).catch(e => {
     console.error('Play error', e);
-    alert('No se pudo reproducir. Asegúrate de servir el proyecto desde un servidor y que los archivos existan.');
+    alert('No se pudo reproducir.');
   });
 }
 
@@ -144,6 +158,39 @@ progress.addEventListener('click', (e) => {
 
 // Volume
 vol.addEventListener('input', () => { audio.volume = vol.value; });
+
+function deleteTrack(i){
+  if(i <= 2) return; // no borrar las canciones por defecto
+
+  const track = playlist[i];
+
+  // 1. Borrar de IndexedDB (si existe en la DB)
+  const tx = db.transaction(STORE_NAME, "readwrite");
+  const store = tx.objectStore(STORE_NAME);
+  // Buscamos por título (mejor sería por id, pero usamos title como proxy)
+  const req = store.getAll();
+  req.onsuccess = () => {
+    const all = req.result;
+    const found = all.find(t => t.title === track.title);
+    if(found){
+      store.delete(found.id);
+    }
+  };
+
+  // 2. Borrar de memoria
+  playlist.splice(i, 1);
+
+  // 3. Reconstruir lista
+  buildPlaylist();
+
+  // 4. Si borraste la canción que estaba sonando → parar
+  if(idx === i){
+    audio.pause();
+    audio.src = "";
+    idx = 0;
+    highlightPlaylist();
+  }
+}
 
 // Buttons
 playBtn.addEventListener('click', togglePlay);
@@ -324,7 +371,7 @@ dropzone.addEventListener("drop", e => {
   handleFiles(files);
 });
 
-// Click en móviles o desktop → abre selector
+// Click en móviles o desktop
 dropzone.addEventListener("click", () => {
   const input = document.createElement("input");
   input.type = "file";
@@ -365,5 +412,110 @@ function handleFiles(files) {
       play();
     });
     playlistEl.appendChild(li);
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const blob = new Blob([e.target.result], { type: file.type });
+      saveTrack({
+        title: file.name,
+        artist: "Local File",
+        blob: blob,
+        cover: "covers/default.webp"
+      });
+    };
+    reader.readAsArrayBuffer(file);
   });
 }
+
+// ===== INDEXEDDB LOGIC =====
+let db;
+const DB_NAME = "tornamesaDB";
+const DB_VERSION = 1;
+const STORE_NAME = "tracks";
+const MAX_TRACKS = 10; // límite de canciones a guardar
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onupgradeneeded = (e) => {
+      db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: "id", autoIncrement: true });
+      }
+    };
+
+    request.onsuccess = (e) => {
+      db = e.target.result;
+      resolve(db);
+    };
+
+    request.onerror = (e) => {
+      console.error("Error abriendo IndexedDB", e);
+      reject(e);
+    };
+  });
+}
+
+function saveTrack(track) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+
+    const addReq = store.add(track);
+
+    addReq.onsuccess = () => {
+      resolve();
+      enforceLimit(); //límite de canciones
+    };
+    addReq.onerror = (e) => reject(e);
+  });
+}
+
+// Elimina las más viejas si excede MAX_TRACKS
+function enforceLimit() {
+  const tx = db.transaction(STORE_NAME, "readwrite");
+  const store = tx.objectStore(STORE_NAME);
+
+  const req = store.getAllKeys();
+  req.onsuccess = () => {
+    const keys = req.result;
+    if (keys.length > MAX_TRACKS) {
+      const extras = keys.length - MAX_TRACKS;
+      for (let i = 0; i < extras; i++) {
+        store.delete(keys[i]); // borra los más viejos
+      }
+    }
+  };
+}
+
+//leer canciones guardadas
+function loadSavedTracks() {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const store = tx.objectStore(STORE_NAME);
+
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = (e) => reject(e);
+  });
+}
+
+// ==== INICIALIZAR INDEXEDDB Y RESTAURAR TRACKS ====
+openDB().then(() => {
+  return loadSavedTracks();
+}).then(savedTracks => {
+  savedTracks.forEach(t => {
+    const url = URL.createObjectURL(t.blob);
+    playlist.push({
+      title: t.title,
+      artist: t.artist || "Local File",
+      src: url,
+      cover: t.cover || "covers/default.webp"
+    });
+  });
+
+  // reconstruir lista visual después de cargar guardados
+  buildPlaylist();
+}).catch(err => console.error("IndexedDB error", err));
+
