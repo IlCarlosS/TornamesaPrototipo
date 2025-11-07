@@ -1,6 +1,6 @@
   // Config: lista de canciones locales (poner archivos en /audio/)
   const playlist = [
-    { src: 'audio/Claim To Fame - The Grey Room _ Clark Sims.mp3', title: 'Claim To Fame', artist: 'The Grey Room & Clark Sims', cover: 'covers/4.webp' },
+    { src: 'audio/Claim To Fame - The Grey Room _ Clark Sims.mp3', title: 'Claim To Fame', artist: 'The Grey Room & Clark Sims', cover: 'covers/2.webp' },
     { src: 'audio/Im Giving Up - Everet Almond.mp3', title: 'Im Giving Up', artist: 'Everet Almond', cover: 'covers/2.webp' },
     { src: 'audio/Time - The Grey Room _ Clark Sims.mp3', title: 'Time', artist: 'The Grey Room & Clark Sims', cover: 'covers/3.webp' }
   ];
@@ -164,7 +164,7 @@ function deleteTrack(i){
 
   const track = playlist[i];
 
-  // 1. Borrar de IndexedDB (si existe en la DB)
+  // Borrar de IndexedDB (si existe en la DB)
   const tx = db.transaction(STORE_NAME, "readwrite");
   const store = tx.objectStore(STORE_NAME);
   // Buscamos por título (mejor sería por id, pero usamos title como proxy)
@@ -177,13 +177,13 @@ function deleteTrack(i){
     }
   };
 
-  // 2. Borrar de memoria
+  // Borrar de memoria
   playlist.splice(i, 1);
 
-  // 3. Reconstruir lista
+  // Reconstruir lista
   buildPlaylist();
 
-  // 4. Si borraste la canción que estaba sonando → parar
+  // Si borraste la canción que estaba sonando → parar
   if(idx === i){
     audio.pause();
     audio.src = "";
@@ -245,7 +245,7 @@ audio.addEventListener('ended', () => {
 audio.addEventListener('loadedmetadata', updateProgress);
 audio.addEventListener('timeupdate', updateProgress);
 
-  // Init
+// Init
 buildPlaylist();
 loadTrack(idx);
 audio.volume = vol.value;
@@ -296,39 +296,87 @@ function setupVisualizer(){
   draw();
 }
 
+// ---------- Helper: convertir color CSS a rgba(...) con alpha ----------
+function cssColorToRgba(cssColor, alpha = 1) {
+  if (!cssColor) return `rgba(255,255,255,${alpha})`;
+  cssColor = cssColor.trim();
+
+  // rgb(...) o rgba(...)
+  if (cssColor.startsWith('rgb')) {
+    const nums = cssColor.match(/[\d.]+/g).map(Number);
+    return `rgba(${nums[0]}, ${nums[1]}, ${nums[2]}, ${alpha})`;
+  }
+
+  // hex #rgb or #rrggbb
+  if (cssColor.startsWith('#')) {
+    let hex = cssColor.slice(1);
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    const int = parseInt(hex, 16);
+    const r = (int >> 16) & 255;
+    const g = (int >> 8) & 255;
+    const b = int & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  try {
+    // crear un elemento temporal para obtener RGB computado
+    const temp = document.createElement('div');
+    temp.style.color = cssColor;
+    document.body.appendChild(temp);
+    const cs = getComputedStyle(temp).color;
+    document.body.removeChild(temp);
+    if (cs.startsWith('rgb')) {
+      const nums = cs.match(/[\d.]+/g).map(Number);
+      return `rgba(${nums[0]}, ${nums[1]}, ${nums[2]}, ${alpha})`;
+    }
+  } catch (e) {
+    // nada
+  }
+  // fallback seguro
+  return `rgba(255,255,255,${alpha})`;
+}
+
+// ---------- draw() actualizado para usar --accent ----------
 function draw(){
   requestAnimationFrame(draw);
+
+  // obtener color accent actual desde CSS y convertir
+  const accentCss = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#ffc107';
+  const accentRGBA = cssColorToRgba(accentCss, 0.9);
+
+  // actualizar datos
   analyser.getByteFrequencyData(dataArray);
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  if(vizMode === "bars"){
+  if (vizMode === "bars") {
     // --- Barras verticales ---
     let barWidth = (canvas.width / bufferLength) * 2.5;
     let barHeight;
     let x = 0;
 
-    for(let i=0; i<bufferLength; i++){
+    ctx.fillStyle = accentRGBA; // usa el color del tema
+    for (let i = 0; i < bufferLength; i++) {
       barHeight = dataArray[i] / 2;
-      ctx.fillStyle = "rgba(255, 193, 7, 0.8)";
       ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
       x += barWidth + 1;
     }
   } else {
     // --- Línea continua / onda ---
-    analyser.getByteTimeDomainData(dataArray);
+    const timeData = new Uint8Array(bufferLength);
+    analyser.getByteTimeDomainData(timeData);
+
     ctx.lineWidth = 2;
-    ctx.strokeStyle = "rgba(255, 193, 7, 0.9)";
+    ctx.strokeStyle = accentRGBA; // usa el color del tema
     ctx.beginPath();
 
     let sliceWidth = canvas.width * 1.0 / bufferLength;
     let x = 0;
 
-    for(let i=0; i<bufferLength; i++){
-      let v = dataArray[i] / 128.0;
-      let y = v * canvas.height/2;
+    for (let i = 0; i < bufferLength; i++) {
+      let v = timeData[i] / 128.0;
+      let y = v * canvas.height / 2;
 
-      if(i === 0){
+      if (i === 0) {
         ctx.moveTo(x, y);
       } else {
         ctx.lineTo(x, y);
@@ -336,7 +384,7 @@ function draw(){
       x += sliceWidth;
     }
 
-    ctx.lineTo(canvas.width, canvas.height/2);
+    ctx.lineTo(canvas.width, canvas.height / 2);
     ctx.stroke();
   }
 }
@@ -518,4 +566,3 @@ openDB().then(() => {
   // reconstruir lista visual después de cargar guardados
   buildPlaylist();
 }).catch(err => console.error("IndexedDB error", err));
-
