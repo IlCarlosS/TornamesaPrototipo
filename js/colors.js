@@ -40,7 +40,23 @@ function setTheme(theme) {
         "--muted", "#b0bec5",
         "--glass", "rgba(255,255,255,0.03)",
         "--surco", "#4a4d4e"
-    ]
+    ],
+    "fender": [
+        "--bg", "var(--bg-fender)",
+        "--card", "var(--card-fender)",
+        "--accent", "var(--accent-fender)",
+        "--muted", "var(--muted-fender)",
+        "--glass", "var(--glass-fender)",
+        "--surco", "var(--surco-fender)"
+    ],
+    "gibson": [
+        "--bg", "var(--bg-gibson)",
+        "--card", "var(--card-gibson)",
+        "--accent", "var(--accent-gibson)",
+        "--muted", "var(--muted-gibson)",
+        "--glass", "var(--glass-gibson)",
+        "--surco", "var(--surco-gibson)"
+    ],
   };
 
   const selected = colors[theme];

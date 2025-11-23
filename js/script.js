@@ -329,7 +329,6 @@ function cssColorToRgba(cssColor, alpha = 1) {
       return `rgba(${nums[0]}, ${nums[1]}, ${nums[2]}, ${alpha})`;
     }
   } catch (e) {
-    // nada
   }
   // fallback seguro
   return `rgba(255,255,255,${alpha})`;
